@@ -1,0 +1,14 @@
+/mvnw text eol=lf
+*.cmd text eol=crlf
+* text=auto
+
+* text=auto
+
+# Устанавливаем формат для всех текстовых файлов
+*.java text eol=lf
+*.xml text eol=lf
+*.properties text eol=lf
+
+# Специальный формат для Windows-скриптов
+*.cmd text eol=crlf
+*.bat text eol=crlf
