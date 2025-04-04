@@ -2,9 +2,8 @@ package lab1.demo.controller;
 
 import lab1.demo.model.Password;
 import lab1.demo.model.User;
-import lab1.demo.repository.PasswordRepository;
-import lab1.demo.repository.UserRepository;
 import lab1.demo.service.PasswordService;
+import lab1.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,108 +14,62 @@ import java.util.List;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordRepository passwordRepository;
+    private UserService userService;
 
     @Autowired
     private PasswordService passwordService;
 
     // Получить всех пользователей с паролями
     @GetMapping
-    public List<User> getAllUsersWithPasswords() {
-        return userRepository.findAll();
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
     }
 
     // Получить одного пользователя с паролями
     @GetMapping("/{id}")
-    public User getUserWithPasswords(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public User getUser(@PathVariable Long id) {
+        return userService.getUserById(id);
     }
 
     // Создать пользователя с паролем
     @PostMapping
-    public User createUserWithPassword(@RequestParam String username,
-                                       @RequestParam int size,
-                                       @RequestParam int level) {
-        User user = new User();
-        user.setUsername(username);
-
-        Password password = new Password();
-        password.setPasswordValue(passwordService.generatePassword(size, level));
-        password.setLength(size);
-        password.setComplexity(getComplexityString(level));
-        password.setUser(user);
-
-        user.setPasswords(List.of(password));
-        return userRepository.save(user);
+    public User createUser(@RequestParam String username,
+                           @RequestParam int size,
+                           @RequestParam int level) {
+        String passwordValue = passwordService.generatePassword(size, level);
+        String complexity = passwordService.getComplexityLabel(level);
+        return userService.createUserWithPassword(username, passwordValue, size, complexity);
     }
 
-    // Добавить новый пароль для уже существующего пользователя
-    @PostMapping("/{userId}/passwords")
-    public Password addPasswordToUser(@PathVariable Long userId,
-                                      @RequestParam int size,
-                                      @RequestParam int level) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Password password = new Password();
-        password.setPasswordValue(passwordService.generatePassword(size, level));
-        password.setLength(size);
-        password.setComplexity(getComplexityString(level));
-        password.setUser(user);
-
-        return passwordRepository.save(password);
+    // Добавить пароль к существующему пользователю
+    @PostMapping("/{id}/passwords")
+    public User addPassword(@PathVariable Long id,
+                            @RequestParam int size,
+                            @RequestParam int level) {
+        String passwordValue = passwordService.generatePassword(size, level);
+        String complexity = passwordService.getComplexityLabel(level);
+        return userService.addPasswordToUser(id, passwordValue, size, complexity);
     }
 
-    // Обновить пароль (сгенерировать новый)
+    // Обновить пароль пользователя (рандомно сгенерированный)
     @PutMapping("/{userId}/passwords/{passwordId}")
     public Password updatePassword(@PathVariable Long userId,
                                    @PathVariable Long passwordId,
                                    @RequestParam int size,
                                    @RequestParam int level) {
-        Password password = passwordRepository.findById(passwordId)
-                .orElseThrow(() -> new RuntimeException("Password not found"));
-
-        if (!password.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Password does not belong to user");
-        }
-
-        password.setPasswordValue(passwordService.generatePassword(size, level));
-        password.setLength(size);
-        password.setComplexity(getComplexityString(level));
-
-        return passwordRepository.save(password);
+        return passwordService.updatePassword(userId, passwordId, size, level);
     }
 
-    // Удалить пользователя (и все его пароли)
+    // Удалить пользователя
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
+        userService.deleteUser(id);
     }
 
-    // Удалить один конкретный пароль
-    // Удалить пароль пользователя
+    // Удалить пароль
     @DeleteMapping("/{userId}/passwords/{passwordId}")
-    public void deletePassword(@PathVariable Long userId, @PathVariable Long passwordId) {
-        Password password = passwordRepository.findById(passwordId)
-                .orElseThrow(() -> new RuntimeException("Password not found"));
-
-        if (!password.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Password does not belong to the user");
-        }
-
-        passwordRepository.deleteById(passwordId);
-    }
-
-    private String getComplexityString(int level) {
-        return switch (level) {
-            case 1 -> "low";
-            case 2 -> "medium";
-            case 3 -> "high";
-            default -> "unknown";
-        };
+    public void deletePassword(@PathVariable Long userId,
+                               @PathVariable Long passwordId) {
+        passwordService.deletePassword(userId, passwordId);
     }
 }
