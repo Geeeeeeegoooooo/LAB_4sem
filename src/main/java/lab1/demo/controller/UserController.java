@@ -19,19 +19,25 @@ public class UserController {
     @Autowired
     private PasswordService passwordService;
 
-    // Получить всех пользователей с паролями
+
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // Получить одного пользователя с паролями
+
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
-    // Создать пользователя с паролем
+
+    @GetMapping("/by-password-complexity")
+    public List<User> getUsersByPasswordComplexity(@RequestParam String complexity) {
+        return userService.getUsersByPasswordComplexity(complexity);
+    }
+
+
     @PostMapping
     public User createUser(@RequestParam String username,
                            @RequestParam int size,
@@ -41,7 +47,7 @@ public class UserController {
         return userService.createUserWithPassword(username, passwordValue, size, complexity);
     }
 
-    // Добавить пароль к существующему пользователю
+
     @PostMapping("/{id}/passwords")
     public User addPassword(@PathVariable Long id,
                             @RequestParam int size,
@@ -51,7 +57,7 @@ public class UserController {
         return userService.addPasswordToUser(id, passwordValue, size, complexity);
     }
 
-    // Обновить пароль пользователя (рандомно сгенерированный)
+
     @PutMapping("/{userId}/passwords/{passwordId}")
     public Password updatePassword(@PathVariable Long userId,
                                    @PathVariable Long passwordId,
@@ -60,13 +66,13 @@ public class UserController {
         return passwordService.updatePassword(userId, passwordId, size, level);
     }
 
-    // Удалить пользователя
+
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
 
-    // Удалить пароль
+
     @DeleteMapping("/{userId}/passwords/{passwordId}")
     public void deletePassword(@PathVariable Long userId,
                                @PathVariable Long passwordId) {

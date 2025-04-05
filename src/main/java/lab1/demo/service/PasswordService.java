@@ -1,7 +1,7 @@
 package lab1.demo.service;
 
+import lab1.demo.cache.CacheService;
 import lab1.demo.model.Password;
-import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
 import lab1.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +18,9 @@ public class PasswordService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private CacheService cacheService;
+
     public Password updatePassword(Long userId, Long passwordId, int size, int level) {
         Password password = passwordRepository.findById(passwordId)
                 .orElseThrow(() -> new RuntimeException("Password not found"));
@@ -31,6 +34,9 @@ public class PasswordService {
         password.setLength(size);
         password.setComplexity(getComplexityLabel(level));
 
+        // Обновляем кэш
+        cacheService.put(passwordId, newPassword);
+
         return passwordRepository.save(password);
     }
 
@@ -43,6 +49,9 @@ public class PasswordService {
         }
 
         passwordRepository.delete(password);
+
+        // Удаляем пароль из кэша
+        cacheService.remove(passwordId);
     }
 
     public String generatePassword(int size, int level) {

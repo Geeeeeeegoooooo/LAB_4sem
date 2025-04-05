@@ -1,5 +1,6 @@
 package lab1.demo.controller;
 
+import lab1.demo.cache.CacheService;
 import lab1.demo.dto.UserRequest;
 import lab1.demo.model.Password;
 import lab1.demo.model.User;
@@ -18,12 +19,13 @@ public class PasswordController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private CacheService cacheService;
 
     @GetMapping("/generate-password")
     public String getPassword(@RequestParam int size, @RequestParam int level) {
         return passwordService.generatePassword(size, level);
     }
-
 
     @PostMapping("/add-user-password")
     public ResponseEntity<String> addUserWithPassword(@RequestBody UserRequest request) {
@@ -38,8 +40,26 @@ public class PasswordController {
         password.setComplexity(complexityLabel);
         password.setUser(user);
 
+        // ⬇️ Сохраняем и получаем обновлённый объект с ID
         userService.addPasswordToUser(user.getId(), password.getPasswordValue(), password.getLength(), password.getComplexity());
 
-        return ResponseEntity.ok("User and password saved.");
+        // ⬇️ Ищем последний пароль пользователя — тот, который только что добавили
+        Password latest = user.getPasswords().get(user.getPasswords().size() - 1);
+
+        // ⬇️ Кладём в кэш по ID
+        cacheService.put(latest.getId(), latest.getPasswordValue());
+
+        return ResponseEntity.ok("Пользователь и пароль сохранены. ID пароля: " + latest.getId());
+    }
+
+
+    @GetMapping("/cache/get")
+    public ResponseEntity<String> getPasswordFromCache(@RequestParam Long passwordId) {
+        String cached = cacheService.get(passwordId);
+        if (cached != null) {
+            return ResponseEntity.ok("КЭШ: " + cached);
+        } else {
+            return ResponseEntity.ok("Пароль не найден в кэше для ID: " + passwordId);
+        }
     }
 }
