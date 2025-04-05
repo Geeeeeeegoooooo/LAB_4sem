@@ -40,13 +40,13 @@ public class PasswordController {
         password.setComplexity(complexityLabel);
         password.setUser(user);
 
-        // ⬇️ Сохраняем и получаем обновлённый объект с ID
+
         userService.addPasswordToUser(user.getId(), password.getPasswordValue(), password.getLength(), password.getComplexity());
 
-        // ⬇️ Ищем последний пароль пользователя — тот, который только что добавили
+
         Password latest = user.getPasswords().get(user.getPasswords().size() - 1);
 
-        // ⬇️ Кладём в кэш по ID
+
         cacheService.put(latest.getId(), latest.getPasswordValue());
 
         return ResponseEntity.ok("Пользователь и пароль сохранены. ID пароля: " + latest.getId());

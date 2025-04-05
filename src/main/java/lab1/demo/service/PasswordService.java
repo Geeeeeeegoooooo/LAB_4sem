@@ -34,7 +34,7 @@ public class PasswordService {
         password.setLength(size);
         password.setComplexity(getComplexityLabel(level));
 
-        // Обновляем кэш
+
         cacheService.put(passwordId, newPassword);
 
         return passwordRepository.save(password);
@@ -50,7 +50,7 @@ public class PasswordService {
 
         passwordRepository.delete(password);
 
-        // Удаляем пароль из кэша
+
         cacheService.remove(passwordId);
     }
 

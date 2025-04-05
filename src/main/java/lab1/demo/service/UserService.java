@@ -55,7 +55,7 @@ public class UserService {
         password.setComplexity(complexity);
         password.setUser(user);
 
-        // проверка и инициализация, если null
+
         if (user.getPasswords() == null) {
             user.setPasswords(new ArrayList<>());
         }
