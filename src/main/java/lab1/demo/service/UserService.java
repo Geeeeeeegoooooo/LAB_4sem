@@ -31,6 +31,10 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id = " + id));
     }
 
+    public User getUserFromCache(Long id) {
+        return cacheService.getUser(id);
+    }
+
     public User getOrCreateUser(String username) {
         return userRepository.findByUsername(username)
                 .orElseGet(() -> {
@@ -62,6 +66,7 @@ public class UserService {
             cacheService.remove(password.getId());
         }
 
+        cacheService.removeUser(userId);
         userRepository.delete(user);
     }
 
@@ -82,6 +87,7 @@ public class UserService {
 
         passwordRepository.save(password);
         cacheService.put(password.getId(), passwordValue);
+        cacheService.putUser(savedUser.getId(), savedUser);
 
         return savedUser;
     }
