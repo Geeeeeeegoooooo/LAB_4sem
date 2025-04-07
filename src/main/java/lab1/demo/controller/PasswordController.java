@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class PasswordController {
 
@@ -22,26 +24,22 @@ public class PasswordController {
     @Autowired
     private CacheService cacheService;
 
+    // Генерация пароля
     @GetMapping("/generate-password")
     public String getPassword(@RequestParam int size, @RequestParam int level) {
         return passwordService.generatePassword(size, level);
     }
 
+    // Добавление пользователя с паролем
     @PostMapping("/add-user-password")
     public ResponseEntity<String> addUserWithPassword(@RequestBody UserRequest request) {
-        User user = userService.getOrCreateUser(request.getUsername());
-
         String complexityLabel = passwordService.getComplexityLabel(request.getComplexity());
-        String generatedPassword = request.getPassword();
-
-        Password password = new Password();
-        password.setPasswordValue(generatedPassword);
-        password.setLength(request.getLength());
-        password.setComplexity(complexityLabel);
-        password.setUser(user);
-
-
-        userService.addPasswordToUser(user.getId(), password.getPasswordValue(), password.getLength(), password.getComplexity());
+        User user = userService.createUserWithPassword(
+                request.getUsername(),
+                request.getPassword(),
+                request.getLength(),
+                complexityLabel
+        );
 
 
         Password latest = user.getPasswords().get(user.getPasswords().size() - 1);
@@ -52,7 +50,7 @@ public class PasswordController {
         return ResponseEntity.ok("Пользователь и пароль сохранены. ID пароля: " + latest.getId());
     }
 
-
+    // Получение пароля из кэша по ID
     @GetMapping("/cache/get")
     public ResponseEntity<String> getPasswordFromCache(@RequestParam Long passwordId) {
         String cached = cacheService.get(passwordId);
@@ -62,4 +60,6 @@ public class PasswordController {
             return ResponseEntity.ok("Пароль не найден в кэше для ID: " + passwordId);
         }
     }
+
+
 }

@@ -1,7 +1,9 @@
 package lab1.demo.service;
 
 import lab1.demo.cache.CacheService;
+import lab1.demo.dto.UserRequest;
 import lab1.demo.model.Password;
+import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
 import lab1.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class PasswordService {
     private UserRepository userRepository;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
     private CacheService cacheService;
 
     public Password updatePassword(Long userId, Long passwordId, int size, int level) {
@@ -34,7 +39,6 @@ public class PasswordService {
         password.setLength(size);
         password.setComplexity(getComplexityLabel(level));
 
-
         cacheService.put(passwordId, newPassword);
 
         return passwordRepository.save(password);
@@ -49,8 +53,6 @@ public class PasswordService {
         }
 
         passwordRepository.delete(password);
-
-
         cacheService.remove(passwordId);
     }
 
@@ -79,5 +81,25 @@ public class PasswordService {
             case 3 -> "high";
             default -> "unknown";
         };
+    }
+
+    public Password createPasswordForUser(UserRequest request) {
+        User user = userService.getOrCreateUser(request.getUsername());
+
+        String complexityLabel = getComplexityLabel(request.getComplexity());
+        String generatedPassword = request.getPassword();
+
+        Password password = new Password();
+        password.setPasswordValue(generatedPassword);
+        password.setLength(request.getLength());
+        password.setComplexity(complexityLabel);
+        password.setUser(user);
+
+        userService.addPasswordToUser(user.getId(), password.getPasswordValue(), password.getLength(), password.getComplexity());
+
+        Password latest = user.getPasswords().get(user.getPasswords().size() - 1);
+        cacheService.put(latest.getId(), latest.getPasswordValue());
+
+        return latest;
     }
 }
