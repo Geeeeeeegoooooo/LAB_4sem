@@ -24,13 +24,13 @@ public class PasswordController {
     @Autowired
     private CacheService cacheService;
 
-    // Генерация пароля
+
     @GetMapping("/generate-password")
     public String getPassword(@RequestParam int size, @RequestParam int level) {
         return passwordService.generatePassword(size, level);
     }
 
-    // Добавление пользователя с паролем
+
     @PostMapping("/add-user-password")
     public ResponseEntity<String> addUserWithPassword(@RequestBody UserRequest request) {
         String complexityLabel = passwordService.getComplexityLabel(request.getComplexity());
@@ -50,7 +50,7 @@ public class PasswordController {
         return ResponseEntity.ok("Пользователь и пароль сохранены. ID пароля: " + latest.getId());
     }
 
-    // Получение пароля из кэша по ID
+
     @GetMapping("/cache/get")
     public ResponseEntity<String> getPasswordFromCache(@RequestParam Long passwordId) {
         String cached = cacheService.get(passwordId);
