@@ -1,4 +1,5 @@
 package lab1.demo.dto;
+import lab1.demo.dto.UserRequest;
 
 public class UserRequest {
     private String username;

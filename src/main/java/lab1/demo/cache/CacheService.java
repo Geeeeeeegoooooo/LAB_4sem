@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collection;
 
 @Component
 public class CacheService {
@@ -13,32 +14,44 @@ public class CacheService {
     private final Map<Long, User> userCache = new ConcurrentHashMap<>();
 
 
+    public void put(Long id, String password) {
+        passwordCache.put(id, password);
+    }
+
 
     public String get(Long id) {
         return passwordCache.get(id);
     }
 
-    public void put(Long id, String password) {
-        System.out.println("КЭШ: Сохраняем пароль с id = " + id + ", value = " + password);
-        passwordCache.put(id, password);
-    }
 
     public void remove(Long id) {
         passwordCache.remove(id);
     }
 
 
+    public void putUser(Long id, User user) {
+        userCache.put(id, user);
+    }
+
 
     public User getUser(Long id) {
         return userCache.get(id);
     }
 
-    public void putUser(Long id, User user) {
-        System.out.println("КЭШ: Сохраняем пользователя с id = " + id + ", username = " + user.getUsername());
-        userCache.put(id, user);
-    }
 
     public void removeUser(Long id) {
         userCache.remove(id);
     }
+
+
+    public Collection<User> getAllUsers() {
+        return userCache.values();
+    }
+
+
+    public void clearCache() {
+        userCache.clear();
+        passwordCache.clear();
+    }
 }
+

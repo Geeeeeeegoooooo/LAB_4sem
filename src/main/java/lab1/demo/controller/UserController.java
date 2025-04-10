@@ -1,6 +1,7 @@
 package lab1.demo.controller;
 
 import lab1.demo.cache.CacheService;
+import lab1.demo.dto.UserRequest;
 import lab1.demo.model.Password;
 import lab1.demo.model.User;
 import lab1.demo.service.PasswordService;
@@ -8,7 +9,7 @@ import lab1.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -34,6 +35,23 @@ public class UserController {
         return userService.getUserById(id);
     }
 
+    @GetMapping("/cache/getAll")
+    public ResponseEntity<?> getAllUsersFromCache() {
+        Collection<User> cachedUsers = cacheService.getAllUsers(); // Получаем всех пользователей из кэша
+        if (cachedUsers != null && !cachedUsers.isEmpty()) {
+            return ResponseEntity.ok(cachedUsers);
+        } else {
+            return ResponseEntity.ok("Нет пользователей в кэше.");
+        }
+    }
+
+    @DeleteMapping("/cache/clear")
+    public ResponseEntity<?> clearCache() {
+        cacheService.clearCache(); // Очистка кэша
+        return ResponseEntity.ok("Кэш очищен.");
+    }
+
+
     @GetMapping("/by-password-complexity")
     public List<User> getUsersByPasswordComplexity(@RequestParam String complexity) {
         return userService.getUsersByPasswordComplexity(complexity);
@@ -46,6 +64,24 @@ public class UserController {
         String passwordValue = passwordService.generatePassword(size, level);
         String complexity = passwordService.getComplexityLabel(level);
         return userService.createUserWithPassword(username, passwordValue, size, complexity);
+    }
+
+    @PostMapping("/create-with-password")
+    public ResponseEntity<?> createWithCustomPassword(@RequestBody UserRequest request) {
+        String complexityLabel;
+        try {
+            complexityLabel = passwordService.getComplexityLabel(request.getComplexity());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Некорректный уровень сложности: " + request.getComplexity());
+        }
+
+        User user = userService.createUserWithPassword(
+                request.getUsername(),
+                request.getPassword(),
+                request.getLength(),
+                complexityLabel
+        );
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/{id}/passwords")
@@ -76,6 +112,10 @@ public class UserController {
         passwordService.deletePassword(userId, passwordId);
     }
 
+    @GetMapping("/test-500")
+    public String testError() {
+        throw new RuntimeException("Это тестовая ошибка 500");
+    }
 
     @GetMapping("/cache/get")
     public ResponseEntity<?> getUserFromCacheById(@RequestParam Long id) {
@@ -86,7 +126,6 @@ public class UserController {
             return ResponseEntity.ok("Пользователь не найден в кэше для ID: " + id);
         }
     }
-
 
     @PostMapping("/cache/put")
     public ResponseEntity<?> putUserToCache(@RequestParam Long id) {
