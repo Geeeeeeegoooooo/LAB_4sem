@@ -28,7 +28,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-
+    //ЗДЕСЬ ДОБАВЛЕНИЕ В КЭШ ПРИ GETBYID/ПОЛУЧЕНИЕ ИЗ КЭША
     public User getUserById(Long id) {
 
         User cachedUser = cacheService.getUser(id);
@@ -76,7 +76,7 @@ public class UserService {
         return user;
     }
 
-
+    //УДАЛЕНИЕ ИЗ КЭША
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
 
@@ -93,7 +93,7 @@ public class UserService {
         return userRepository.findUsersByPasswordComplexity(complexity);
     }
 
-
+    // ЗДЕСЬ ДОБАВЛЕНИЕ В КЭШ ПРИ СОЗДАНИИ
     public User createUserWithPassword(String username, String passwordValue, int length, String complexity) {
 
         if (username == null || username.trim().isEmpty()) {

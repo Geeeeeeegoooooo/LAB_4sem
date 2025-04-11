@@ -37,7 +37,7 @@ public class UserController {
 
     @GetMapping("/cache/getAll")
     public ResponseEntity<?> getAllUsersFromCache() {
-        Collection<User> cachedUsers = cacheService.getAllUsers(); // Получаем всех пользователей из кэша
+        Collection<User> cachedUsers = cacheService.getAllUsers();
         if (cachedUsers != null && !cachedUsers.isEmpty()) {
             return ResponseEntity.ok(cachedUsers);
         } else {

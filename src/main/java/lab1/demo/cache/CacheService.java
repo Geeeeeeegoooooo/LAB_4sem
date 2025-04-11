@@ -28,7 +28,7 @@ public class CacheService {
         passwordCache.remove(id);
     }
 
-
+    //ДЛЯ USERA РАБОТА С КЭШЕМ РЕАЛИЗОВАНА ВОТ (МЕТОДЫ)
     public void putUser(Long id, User user) {
         userCache.put(id, user);
     }
