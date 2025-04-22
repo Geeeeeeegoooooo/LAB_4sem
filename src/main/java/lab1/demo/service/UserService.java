@@ -23,41 +23,46 @@ public class UserService {
     @Autowired
     private CacheService cacheService;
 
-
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    //ЗДЕСЬ ДОБАВЛЕНИЕ В КЭШ ПРИ GETBYID/ПОЛУЧЕНИЕ ИЗ КЭША
     public User getUserById(Long id) {
-
         User cachedUser = cacheService.getUser(id);
         if (cachedUser != null) {
             System.out.println("КЭШ: Пользователь найден в кэше с id = " + id);
             return cachedUser;
         }
 
-
         System.out.println("КЭШ: Пользователь не найден в кэше. Загружаем из базы...");
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id = " + id));
 
-
         cacheService.putUser(id, user);
+        cacheService.putUserByUsername(user.getUsername(), user);
         return user;
     }
 
-
     public User getOrCreateUser(String username) {
-        return userRepository.findByUsername(username)
+        User cachedUser = cacheService.getUserByUsername(username);
+        if (cachedUser != null) {
+            System.out.println("КЭШ: Пользователь найден в кэше с username = " + username);
+            return cachedUser;
+        }
+
+        System.out.println("КЭШ: Пользователь не найден в кэше. Проверяем в базе...");
+        User user = userRepository.findByUsername(username)
                 .orElseGet(() -> {
                     User newUser = new User();
                     newUser.setUsername(username);
                     newUser.setPasswords(new ArrayList<>());
                     return userRepository.save(newUser);
                 });
-    }
 
+        cacheService.putUser(user.getId(), user);
+        cacheService.putUserByUsername(user.getUsername(), user);
+        return user;
+    }
 
     public User addPasswordToUser(Long userId, String passwordValue, int length, String complexity) {
         User user = getUserById(userId);
@@ -70,13 +75,10 @@ public class UserService {
 
         passwordRepository.save(password);
 
-
         cacheService.put(password.getId(), passwordValue);
-
         return user;
     }
 
-    //УДАЛЕНИЕ ИЗ КЭША
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
 
@@ -85,17 +87,16 @@ public class UserService {
         }
 
         cacheService.removeUser(userId);
+        cacheService.removeUserByUsername(user.getUsername());
+
         userRepository.delete(user);
     }
-
 
     public List<User> getUsersByPasswordComplexity(String complexity) {
         return userRepository.findUsersByPasswordComplexity(complexity);
     }
 
-    // ЗДЕСЬ ДОБАВЛЕНИЕ В КЭШ ПРИ СОЗДАНИИ
     public User createUserWithPassword(String username, String passwordValue, int length, String complexity) {
-
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Имя пользователя не может быть пустым");
         }
@@ -108,12 +109,10 @@ public class UserService {
             throw new IllegalArgumentException("Недопустимый уровень сложности пароля: " + complexity);
         }
 
-
         User user = new User();
         user.setUsername(username);
         user.setPasswords(new ArrayList<>());
         User savedUser = userRepository.save(user);
-
 
         Password password = new Password();
         password.setPasswordValue(passwordValue);
@@ -123,10 +122,11 @@ public class UserService {
 
         passwordRepository.save(password);
 
-
         cacheService.put(password.getId(), passwordValue);
         cacheService.putUser(savedUser.getId(), savedUser);
+        cacheService.putUserByUsername(savedUser.getUsername(), savedUser);
 
         return savedUser;
     }
 }
+
