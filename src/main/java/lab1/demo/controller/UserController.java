@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 import java.util.List;
 
+import lab1.demo.dto.BulkUserRequest;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -132,5 +134,10 @@ public class UserController {
         User user = userService.getUserById(id);
         cacheService.putUser(id, user);
         return ResponseEntity.ok("Пользователь с ID " + id + " добавлен в кэш.");
+    }
+    @PostMapping("/bulk-create")
+    public ResponseEntity<List<User>> bulkCreate(@RequestBody List<BulkUserRequest> requests) {
+        List<User> createdUsers = userService.bulkCreateUsersWithPasswords(requests);
+        return ResponseEntity.ok(createdUsers);
     }
 }

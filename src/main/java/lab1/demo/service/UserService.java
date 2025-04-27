@@ -5,14 +5,24 @@ import lab1.demo.model.Password;
 import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
 import lab1.demo.repository.UserRepository;
+import lab1.demo.dto.BulkUserRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
+    @Autowired
+    @Lazy
+    private PasswordService passwordService;
 
     @Autowired
     private UserRepository userRepository;
@@ -128,5 +138,52 @@ public class UserService {
 
         return savedUser;
     }
-}
 
+    @Transactional
+    public List<User> bulkCreateUsersWithPasswords(List<BulkUserRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new IllegalArgumentException("Список запросов не может быть пустым");
+        }
+
+        List<User> savedUsers = new ArrayList<>();
+
+        for (BulkUserRequest request : requests) {
+            try {
+                User user = new User();
+                user.setUsername(request.getUsername());
+                User savedUser = userRepository.save(user);
+
+                int levelInt;
+                switch (request.getLevel().toLowerCase()) {
+                    case "low":
+                        levelInt = 1;
+                        break;
+                    case "medium":
+                        levelInt = 2;
+                        break;
+                    case "high":
+                        levelInt = 3;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Недопустимый уровень сложности пароля: " + request.getLevel());
+                }
+
+                Password password = new Password();
+                password.setPasswordValue(passwordService.generatePassword(request.getSize(), levelInt));
+                password.setUser(savedUser);
+
+                passwordRepository.save(password);
+
+                cacheService.putUser(savedUser.getId(), savedUser);
+                cacheService.putUserByUsername(savedUser.getUsername(), savedUser);
+
+                savedUsers.add(savedUser);
+            } catch (Exception e) {
+                log.error("[ERROR] Ошибка в методе: bulkCreateUsersWithPasswords | Сообщение: {}", e.getMessage());
+                throw e;
+            }
+        }
+
+        return savedUsers;
+    }
+}

@@ -26,7 +26,7 @@ public class ErrorHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        String name = ex.getName(); // имя параметра
+        String name = ex.getName();
         String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
         String value = ex.getValue() != null ? ex.getValue().toString() : "null";
 
@@ -38,7 +38,7 @@ public class ErrorHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException ex) {
-        return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.NOT_FOUND); // 404 вместо 500
+        return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.NOT_FOUND);
     }
 
 }
