@@ -26,7 +26,11 @@ public class PasswordService {
     @Autowired
     private CacheService cacheService;
 
+    @Autowired
+    private RequestCounterService requestCounterService;
+
     public Password updatePassword(Long userId, Long passwordId, int size, int level) {
+        requestCounterService.increment();
         Password password = passwordRepository.findById(passwordId)
                 .orElseThrow(() -> new RuntimeException("Password not found"));
 
@@ -45,6 +49,7 @@ public class PasswordService {
     }
 
     public void deletePassword(Long userId, Long passwordId) {
+        requestCounterService.increment();
         Password password = passwordRepository.findById(passwordId)
                 .orElseThrow(() -> new RuntimeException("Password not found"));
 
@@ -57,6 +62,7 @@ public class PasswordService {
     }
 
     public String generatePassword(int size, int level) {
+        requestCounterService.increment();
         String chars = switch (level) {
             case 1 -> "abcdefghijklmnopqrstuvwxyz";
             case 2 -> "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -75,6 +81,7 @@ public class PasswordService {
     }
 
     public String getComplexityLabel(int level) {
+        requestCounterService.increment();
         return switch (level) {
             case 1 -> "low";
             case 2 -> "medium";
@@ -84,6 +91,7 @@ public class PasswordService {
     }
 
     public Password createPasswordForUser(UserRequest request) {
+        requestCounterService.increment();
         User user = userService.getOrCreateUser(request.getUsername());
 
         String complexityLabel = getComplexityLabel(request.getComplexity());

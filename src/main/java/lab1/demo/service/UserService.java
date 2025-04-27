@@ -21,6 +21,9 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
+    private RequestCounterService requestCounterService;
+
+    @Autowired
     @Lazy
     private PasswordService passwordService;
 
@@ -34,10 +37,12 @@ public class UserService {
     private CacheService cacheService;
 
     public List<User> getAllUsers() {
+        requestCounterService.increment();
         return userRepository.findAll();
     }
 
     public User getUserById(Long id) {
+        requestCounterService.increment();
         User cachedUser = cacheService.getUser(id);
         if (cachedUser != null) {
             System.out.println("КЭШ: Пользователь найден в кэше с id = " + id);
@@ -54,6 +59,7 @@ public class UserService {
     }
 
     public User getOrCreateUser(String username) {
+        requestCounterService.increment();
         User cachedUser = cacheService.getUserByUsername(username);
         if (cachedUser != null) {
             System.out.println("КЭШ: Пользователь найден в кэше с username = " + username);
@@ -75,6 +81,7 @@ public class UserService {
     }
 
     public User addPasswordToUser(Long userId, String passwordValue, int length, String complexity) {
+        requestCounterService.increment();
         User user = getUserById(userId);
 
         Password password = new Password();
@@ -90,6 +97,7 @@ public class UserService {
     }
 
     public void deleteUser(Long userId) {
+        requestCounterService.increment();
         User user = getUserById(userId);
 
         for (Password password : user.getPasswords()) {
@@ -103,10 +111,12 @@ public class UserService {
     }
 
     public List<User> getUsersByPasswordComplexity(String complexity) {
+        requestCounterService.increment();
         return userRepository.findUsersByPasswordComplexity(complexity);
     }
 
     public User createUserWithPassword(String username, String passwordValue, int length, String complexity) {
+        requestCounterService.increment();
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Имя пользователя не может быть пустым");
         }
@@ -141,6 +151,7 @@ public class UserService {
 
     @Transactional
     public List<User> bulkCreateUsersWithPasswords(List<BulkUserRequest> requests) {
+        requestCounterService.increment();
         if (requests == null || requests.isEmpty()) {
             throw new IllegalArgumentException("Список запросов не может быть пустым");
         }
