@@ -57,6 +57,15 @@ public class PasswordService {
             throw new RuntimeException("Password does not belong to the user");
         }
 
+        User user = password.getUser();
+        user.getPasswords().remove(password);
+
+        passwordRepository.delete(password);
+
+        cacheService.remove(passwordId);
+
+
+
         passwordRepository.delete(password);
         cacheService.remove(passwordId);
     }

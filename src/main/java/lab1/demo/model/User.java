@@ -20,6 +20,7 @@ public class User {
 
     private String username;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Password> passwords = new ArrayList<>();
+
 }

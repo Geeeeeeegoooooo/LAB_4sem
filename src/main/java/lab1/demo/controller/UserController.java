@@ -60,13 +60,12 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestParam String username,
-                           @RequestParam int size,
-                           @RequestParam int level) {
-        String passwordValue = passwordService.generatePassword(size, level);
-        String complexity = passwordService.getComplexityLabel(level);
-        return userService.createUserWithPassword(username, passwordValue, size, complexity);
+    public User createUser(@RequestBody UserRequest request) {
+        String passwordValue = passwordService.generatePassword(request.getLength(), request.getComplexity());
+        String complexity = passwordService.getComplexityLabel(request.getComplexity());
+        return userService.createUserWithPassword(request.getUsername(), passwordValue, request.getLength(), complexity);
     }
+
 
     @PostMapping("/create-with-password")
     public ResponseEntity<?> createWithCustomPassword(@RequestBody UserRequest request) {

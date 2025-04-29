@@ -16,7 +16,7 @@ import java.util.List;
 public class PasswordController {
 
     @Autowired
-    private PasswordService passwordService;
+    public PasswordService passwordService;
 
     @Autowired
     private UserService userService;
