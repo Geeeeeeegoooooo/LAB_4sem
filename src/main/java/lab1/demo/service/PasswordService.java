@@ -6,47 +6,49 @@ import lab1.demo.model.Password;
 import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
 import lab1.demo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
 
-@Service
-public class PasswordService {
+    @Service
+    @RequiredArgsConstructor
+    public class PasswordService {
 
-    @Autowired
-    private PasswordRepository passwordRepository;
+        @Autowired
+        private PasswordRepository passwordRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private UserService userService;
+        @Autowired
+        private UserService userService;
 
-    @Autowired
-    private CacheService cacheService;
+        @Autowired
+        private CacheService cacheService;
 
-    @Autowired
-    private RequestCounterService requestCounterService;
+        @Autowired
+        private RequestCounterService requestCounterService;
 
-    public Password updatePassword(Long userId, Long passwordId, int size, int level) {
-        requestCounterService.increment();
-        Password password = passwordRepository.findById(passwordId)
-                .orElseThrow(() -> new RuntimeException("Password not found"));
+        public Password updatePassword(Long userId, Long passwordId, int size, int level) {
+            requestCounterService.increment();
+            Password password = passwordRepository.findById(passwordId)
+                    .orElseThrow(() -> new RuntimeException("Password not found"));
 
-        if (!password.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Password does not belong to the user");
+            if (!password.getUser().getId().equals(userId)) {
+                throw new RuntimeException("Password does not belong to the user");
+            }
+
+            String newPassword = generatePassword(size, level);
+            password.setPasswordValue(newPassword);
+            password.setLength(size);
+            password.setComplexity(getComplexityLabel(level));
+
+            cacheService.put(passwordId, newPassword);
+
+            return passwordRepository.save(password);
         }
-
-        String newPassword = generatePassword(size, level);
-        password.setPasswordValue(newPassword);
-        password.setLength(size);
-        password.setComplexity(getComplexityLabel(level));
-
-        cacheService.put(passwordId, newPassword);
-
-        return passwordRepository.save(password);
-    }
 
     public void deletePassword(Long userId, Long passwordId) {
         requestCounterService.increment();

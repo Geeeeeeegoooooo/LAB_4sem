@@ -1,36 +1,40 @@
 package lab1.demo;
 
+import lab1.demo.cache.CacheService;
 import lab1.demo.model.Password;
 import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
-import lab1.demo.repository.UserRepository;
 import lab1.demo.service.PasswordService;
-import org.junit.jupiter.api.BeforeEach;
+import lab1.demo.service.RequestCounterService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PasswordServiceTest {
 
     @Mock
     private PasswordRepository passwordRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private RequestCounterService requestCounterService;
+
+    @Mock
+    private CacheService cacheService;
 
     @InjectMocks
     private PasswordService passwordService;
-
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     private int convertLevel(String level) {
         return switch (level.toLowerCase()) {
@@ -45,34 +49,45 @@ public class PasswordServiceTest {
     public void updatePassword_WhenUserAndPasswordExist_ShouldReturnUpdatedPassword() {
         Long userId = 1L;
         Long passwordId = 2L;
-        String level = "high";
         int size = 12;
+        int level = convertLevel("high");
 
-        User user = new User();
-        user.setId(userId);
+        User owner = new User();
+        owner.setId(userId);
+        Password pwd = new Password();
+        pwd.setId(passwordId);
+        pwd.setUser(owner);
 
-        Password password = new Password();
-        password.setId(passwordId);
-        password.setUser(user);
+        when(passwordRepository.findById(passwordId)).thenReturn(Optional.of(pwd));
+        lenient().when(passwordRepository.save(any(Password.class))).thenReturn(pwd);
+        lenient().doNothing().when(cacheService).put(anyLong(), anyString());
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(passwordRepository.findById(passwordId)).thenReturn(Optional.of(password));
-        when(passwordRepository.save(any(Password.class))).thenReturn(password);
-
-        Password updated = passwordService.updatePassword(userId, passwordId, size, convertLevel(level));
+        Password updated = passwordService.updatePassword(userId, passwordId, size, level);
 
         assertNotNull(updated);
         assertEquals(passwordId, updated.getId());
-        verify(passwordRepository, times(1)).save(password);
+        verify(passwordRepository, times(1)).save(pwd);
+        verify(cacheService, times(1)).put(eq(passwordId), anyString());
     }
 
     @Test
-    public void updatePassword_WhenUserDoesNotExist_ShouldThrowException() {
-        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+    public void updatePassword_WhenPasswordNotOwnedByUser_ShouldThrowException() {
+        Long userId = 1L;
+        Long passwordId = 2L;
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () ->
-                passwordService.updatePassword(1L, 2L, 10, convertLevel("medium")));
 
-        assertEquals("Пользователь не найден", exception.getMessage());
+        User otherUser = new User();
+        otherUser.setId(99L);
+        Password pwd = new Password();
+        pwd.setId(passwordId);
+        pwd.setUser(otherUser);
+
+        when(passwordRepository.findById(passwordId)).thenReturn(Optional.of(pwd));
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> passwordService.updatePassword(userId, passwordId, 10, convertLevel("medium"))
+        );
+        assertEquals("Password does not belong to the user", ex.getMessage());
     }
 }

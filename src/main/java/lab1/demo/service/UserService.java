@@ -6,6 +6,7 @@ import lab1.demo.model.User;
 import lab1.demo.repository.PasswordRepository;
 import lab1.demo.repository.UserRepository;
 import lab1.demo.dto.BulkUserRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
