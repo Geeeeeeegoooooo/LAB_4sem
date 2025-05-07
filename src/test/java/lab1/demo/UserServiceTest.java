@@ -15,119 +15,175 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock private UserRepository userRepository;
-    @Mock private PasswordRepository passwordRepository;
-    @Mock private PasswordService passwordService;
-    @Mock private RequestCounterService requestCounterService;
-    @Mock private CacheService cacheService;
+    @Mock
+    private UserRepository userRepository;
 
-    @InjectMocks private UserService userService;
+    @Mock
+    private PasswordRepository passwordRepository;
+
+    @Mock
+    private PasswordService passwordService;
+
+    @Mock
+    private RequestCounterService requestCounterService;
+
+    @Mock
+    private CacheService cacheService;
+
+    @InjectMocks
+    private UserService userService;
 
     @Test
-    void getAllUsers_whenCalled_thenReturnsAllUsers() {
-        when(userRepository.findAll()).thenReturn(List.of(new User(), new User()));
+    void getAllUsers_whenCalled_thenReturnsAllUsersAndIncrementsCounter() {
+
+        User mockUser1 = mock(User.class);
+        User mockUser2 = mock(User.class);
+        when(userRepository.findAll()).thenReturn(List.of(mockUser1, mockUser2));
+
 
         List<User> result = userService.getAllUsers();
+
 
         assertEquals(2, result.size());
         verify(requestCounterService).increment();
     }
 
     @Test
-    void getUserById_whenInCache_thenReturnsCachedUser() {
-        User cachedUser = new User();
-        cachedUser.setId(1L);
-        when(cacheService.getUser(1L)).thenReturn(cachedUser);
+    void getUserById_whenUserInCache_thenReturnsFromCache() {
 
-        User result = userService.getUserById(1L);
+        Long userId = 1L;
+        User mockUser = mock(User.class);
+        when(cacheService.getUser(userId)).thenReturn(mockUser);
 
-        assertEquals(cachedUser, result);
+
+        User result = userService.getUserById(userId);
+
+
+        assertEquals(mockUser, result);
         verify(userRepository, never()).findById(any());
+        verify(requestCounterService).increment();
     }
 
     @Test
-    void getOrCreateUser_whenUserExists_thenReturnsUser() {
-        User existingUser = new User();
-        existingUser.setUsername("test");
-        when(cacheService.getUserByUsername("test")).thenReturn(existingUser);
+    void getOrCreateUser_whenUserNotInCache_thenCreatesNewUser() {
 
-        User result = userService.getOrCreateUser("test");
+        String username = "newuser";
+        when(cacheService.getUserByUsername(username)).thenReturn(null);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
-        assertEquals(existingUser, result);
-        verify(userRepository, never()).findByUsername(any());
-    }
+        User mockUser = mock(User.class);
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
 
-    @Test
-    void addPasswordToUser_whenValidInput_thenAddsPassword() {
-        User user = new User();
-        user.setId(1L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        User result = userService.addPasswordToUser(1L, "pwd", 8, "low");
+        User result = userService.getOrCreateUser(username);
+
 
         assertNotNull(result);
-        verify(passwordRepository).save(any());
-        verify(cacheService).put(anyLong(), eq("pwd"));
+        verify(userRepository).save(any(User.class));
+        verify(cacheService).putUser(anyLong(), any(User.class));
+        verify(requestCounterService).increment();
     }
 
     @Test
-    void deleteUser_whenValidId_thenDeletesAndClearsCache() {
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("test");
-        Password password = new Password();
-        password.setId(2L);
-        user.setPasswords(List.of(password));
+    void addPasswordToUser_whenUserExists_thenAddsPassword() {
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Long userId = 1L;
+        User mockUser = mock(User.class);
+        when(mockUser.getId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
 
-        userService.deleteUser(1L);
 
-        verify(userRepository).delete(user);
-        verify(cacheService).removeUser(1L);
-        verify(cacheService).removeUserByUsername("test");
+        User result = userService.addPasswordToUser(userId, "newPwd", 12, "high");
+
+
+        assertNotNull(result);
+        verify(passwordRepository).save(any(Password.class));
+        verify(cacheService).put(anyLong(), eq("newPwd"));
+        verify(requestCounterService).increment();
+    }
+
+    @Test
+    void deleteUser_whenUserHasPasswords_thenClearsAllCacheEntries() {
+
+        Long userId = 1L;
+        String username = "testuser";
+
+        User mockUser = mock(User.class);
+        when(mockUser.getId()).thenReturn(userId);
+        when(mockUser.getUsername()).thenReturn(username);
+
+        Password mockPassword = mock(Password.class);
+        when(mockPassword.getId()).thenReturn(2L);
+        when(mockUser.getPasswords()).thenReturn(List.of(mockPassword));
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+
+
+        userService.deleteUser(userId);
+
+
+        verify(userRepository).delete(mockUser);
+        verify(cacheService).removeUser(userId);
+        verify(cacheService).removeUserByUsername(username);
         verify(cacheService).remove(2L);
+        verify(requestCounterService).increment();
     }
 
     @Test
-    void createUserWithPassword_whenInvalidComplexity_thenThrowsException() {
+    void createUserWithPassword_whenInvalidPasswordLength_thenThrowsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> userService.createUserWithPassword("test", "pwd", 8, "invalid"));
+                () -> userService.createUserWithPassword("test", "pwd", 0, "low"));
     }
 
     @Test
-    void bulkCreateUsersWithPasswords_whenValidRequests_thenCreatesUsers() {
+    void bulkCreateUsersWithPasswords_whenSingleRequest_thenCreatesOneUser() {
 
         BulkUserRequest request = new BulkUserRequest();
-        request.setUsername("test");
-        request.setSize(8);
-        request.setLevel("medium");
+        request.setUsername("testuser");
+        request.setSize(10);
+        request.setLevel("high");
 
-
-
-        when(userRepository.save(any())).thenReturn(new User());
+        User mockUser = mock(User.class);
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
         when(passwordService.generatePassword(anyInt(), anyInt())).thenReturn("generatedPwd");
+
 
         List<User> result = userService.bulkCreateUsersWithPasswords(List.of(request));
 
+
         assertEquals(1, result.size());
-        verify(passwordService).generatePassword(8, 2);
-        verify(cacheService).putUser(anyLong(), any());
+        verify(passwordService).generatePassword(10, 3);
+        verify(cacheService).putUser(anyLong(), any(User.class));
+        verify(requestCounterService).increment();
     }
 
     @Test
-    void bulkCreateUsersWithPasswords_whenEmptyList_thenThrowsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> userService.bulkCreateUsersWithPasswords(List.of()));
+    void bulkCreateUsersWithPasswords_whenNullRequest_thenThrowsException() {
+        assertThrows(NullPointerException.class,
+                () -> userService.bulkCreateUsersWithPasswords(null));
+    }
+
+    @Test
+    void getUsersByPasswordComplexity_whenNoUsersFound_thenReturnsEmptyList() {
+
+        when(userRepository.findUsersByPasswordComplexity("high")).thenReturn(Collections.emptyList());
+
+
+        List<User> result = userService.getUsersByPasswordComplexity("high");
+
+
+        assertTrue(result.isEmpty());
+        verify(requestCounterService).increment();
     }
 }
