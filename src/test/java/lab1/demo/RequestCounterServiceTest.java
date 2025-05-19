@@ -50,4 +50,23 @@ class RequestCounterServiceTest {
 
         assertEquals(threads, counterService.getCount());
     }
+    @Test
+    void increment_WhenCalledFromMultipleThreads_ThenMaintainsCorrectCount() throws InterruptedException {
+
+        int threads = 100;
+        Thread[] threadPool = new Thread[threads];
+
+
+        for (int i = 0; i < threads; i++) {
+            threadPool[i] = new Thread(counterService::increment);
+            threadPool[i].start();
+        }
+
+        for (Thread thread : threadPool) {
+            thread.join();
+        }
+
+
+        assertEquals(threads, counterService.getCount());
+    }
 }

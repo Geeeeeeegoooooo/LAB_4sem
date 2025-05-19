@@ -185,5 +185,22 @@ class UserServiceTest {
 
         assertTrue(result.isEmpty());
         verify(requestCounterService).increment();
+
+
+
+
+    }
+    @Test
+    void createUserWithPassword_WhenInvalidPasswordLength_ThenThrowsException() {
+
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.createUserWithPassword("test", "pwd", 0, "low"));
+    }
+
+    @Test
+    void bulkCreateUsersWithPasswords_WhenNullRequest_ThenThrowsException() {
+
+        assertThrows(NullPointerException.class,
+                () -> userService.bulkCreateUsersWithPasswords(null));
     }
 }

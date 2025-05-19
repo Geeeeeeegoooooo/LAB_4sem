@@ -10,18 +10,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
-import org.junit.jupiter.api.Test;
+
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 public class UserControllerTest {
 
     @Mock
     private UserService userService;
-
-
 
     @InjectMocks
     private UserController userController;
@@ -33,6 +32,7 @@ public class UserControllerTest {
 
     @Test
     public void bulkCreateUsers_WhenValidRequest_ShouldReturnCreatedUsers() {
+
         BulkUserRequest req1 = new BulkUserRequest("test1", 8, "low");
         BulkUserRequest req2 = new BulkUserRequest("test2", 10, "medium");
 
@@ -47,7 +47,9 @@ public class UserControllerTest {
         when(userService.bulkCreateUsersWithPasswords(List.of(req1, req2)))
                 .thenReturn(List.of(u1, u2));
 
+
         ResponseEntity<List<User>> response = userController.bulkCreate(List.of(req1, req2));
+
 
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());

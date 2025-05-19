@@ -157,4 +157,20 @@ class PasswordServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> passwordService.generatePassword(0, 1));
     }
+    @Test
+    void updatePassword_WhenPasswordNotFound_ThenThrowsException() {
+
+        when(passwordRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+
+        assertThrows(RuntimeException.class,
+                () -> passwordService.updatePassword(1L, 1L, 10, 1));
+    }
+
+    @Test
+    void generatePassword_WhenSizeZero_ThenThrowsException() {
+
+        assertThrows(IllegalArgumentException.class,
+                () -> passwordService.generatePassword(0, 1));
+    }
 }
