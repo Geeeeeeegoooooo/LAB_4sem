@@ -18,8 +18,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +41,6 @@ class PasswordServiceTest {
 
     @Test
     void updatePassword_whenValidInput_thenUpdatesPassword() {
-
         Long userId = 1L;
         Long passwordId = 2L;
 
@@ -56,9 +54,7 @@ class PasswordServiceTest {
         when(passwordRepository.findById(passwordId)).thenReturn(Optional.of(mockPassword));
         when(passwordRepository.save(any(Password.class))).thenReturn(mockPassword);
 
-
         Password result = passwordService.updatePassword(userId, passwordId, 12, 2);
-
 
         assertNotNull(result);
         verify(passwordRepository).save(mockPassword);
@@ -67,8 +63,16 @@ class PasswordServiceTest {
     }
 
     @Test
-    void deletePassword_whenValidInput_thenDeletesPassword() {
+    void updatePassword_whenPasswordNotFound_thenThrowsException() {
+        when(passwordRepository.findById(anyLong())).thenReturn(Optional.empty());
 
+        assertThrows(RuntimeException.class,
+                () -> passwordService.updatePassword(1L, 1L, 10, 1));
+        verify(requestCounterService).increment();
+    }
+
+    @Test
+    void deletePassword_whenValidInput_thenDeletesPassword() {
         Long userId = 1L;
         Long passwordId = 2L;
 
@@ -81,9 +85,7 @@ class PasswordServiceTest {
 
         when(passwordRepository.findById(passwordId)).thenReturn(Optional.of(mockPassword));
 
-
         passwordService.deletePassword(userId, passwordId);
-
 
         verify(passwordRepository).delete(mockPassword);
         verify(cacheService).remove(passwordId);
@@ -92,9 +94,7 @@ class PasswordServiceTest {
 
     @Test
     void generatePassword_whenLevel1_thenReturnsLowercase() {
-
         String result = passwordService.generatePassword(10, 1);
-
 
         assertNotNull(result);
         assertEquals(10, result.length());
@@ -103,11 +103,17 @@ class PasswordServiceTest {
 
     @Test
     void generatePassword_whenInvalidLevel_thenUsesDefaultChars() {
-
         String result = passwordService.generatePassword(8, 999);
 
-
         assertNotNull(result);
+        assertEquals(8, result.length());
+        verify(requestCounterService).increment();
+    }
+
+    @Test
+    void generatePassword_whenSizeZero_thenThrowsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> passwordService.generatePassword(0, 1));
         verify(requestCounterService).increment();
     }
 
@@ -121,7 +127,6 @@ class PasswordServiceTest {
 
     @Test
     void createPasswordForUser_whenValidRequest_thenCreatesPassword() {
-
         UserRequest request = new UserRequest();
         request.setUsername("test");
         request.setLength(8);
@@ -135,42 +140,10 @@ class PasswordServiceTest {
         when(userService.addPasswordToUser(anyLong(), anyString(), anyInt(), anyString()))
                 .thenReturn(mockUser);
 
-
         Password result = passwordService.createPasswordForUser(request);
-
 
         assertNotNull(result);
         verify(cacheService).put(anyLong(), anyString());
         verify(requestCounterService).increment();
-    }
-
-    @Test
-    void updatePassword_whenPasswordNotFound_thenThrowsException() {
-        when(passwordRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class,
-                () -> passwordService.updatePassword(1L, 1L, 10, 1));
-    }
-
-    @Test
-    void generatePassword_whenSizeZero_thenThrowsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> passwordService.generatePassword(0, 1));
-    }
-    @Test
-    void updatePassword_WhenPasswordNotFound_ThenThrowsException() {
-
-        when(passwordRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-
-        assertThrows(RuntimeException.class,
-                () -> passwordService.updatePassword(1L, 1L, 10, 1));
-    }
-
-    @Test
-    void generatePassword_WhenSizeZero_ThenThrowsException() {
-
-        assertThrows(IllegalArgumentException.class,
-                () -> passwordService.generatePassword(0, 1));
     }
 }

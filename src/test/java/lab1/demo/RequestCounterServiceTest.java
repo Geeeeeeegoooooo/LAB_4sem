@@ -1,5 +1,4 @@
 package lab1.demo;
-
 import lab1.demo.service.RequestCounterService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,18 +15,18 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void shouldReturnZeroInitially() {
+    void getCount_whenInitialState_thenReturnsZero() {
         assertEquals(0, counterService.getCount());
     }
 
     @Test
-    void shouldIncrementCounterByOne() {
+    void increment_whenCalledOnce_thenIncreasesByOne() {
         counterService.increment();
         assertEquals(1, counterService.getCount());
     }
 
     @Test
-    void shouldIncrementCounterMultipleTimes() {
+    void increment_whenCalledMultipleTimes_thenIncreasesCorrectly() {
         for (int i = 0; i < 5; i++) {
             counterService.increment();
         }
@@ -35,38 +34,19 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void shouldBeThreadSafe() throws InterruptedException {
-        int threads = 100;
-        Thread[] threadPool = new Thread[threads];
+    void increment_whenCalledConcurrently_thenMaintainsCorrectCount() throws InterruptedException {
+        int threadCount = 100;
+        Thread[] threads = new Thread[threadCount];
 
-        for (int i = 0; i < threads; i++) {
-            threadPool[i] = new Thread(counterService::increment);
-            threadPool[i].start();
+        for (int i = 0; i < threadCount; i++) {
+            threads[i] = new Thread(counterService::increment);
+            threads[i].start();
         }
 
-        for (Thread thread : threadPool) {
+        for (Thread thread : threads) {
             thread.join();
         }
 
-        assertEquals(threads, counterService.getCount());
-    }
-    @Test
-    void increment_WhenCalledFromMultipleThreads_ThenMaintainsCorrectCount() throws InterruptedException {
-
-        int threads = 100;
-        Thread[] threadPool = new Thread[threads];
-
-
-        for (int i = 0; i < threads; i++) {
-            threadPool[i] = new Thread(counterService::increment);
-            threadPool[i].start();
-        }
-
-        for (Thread thread : threadPool) {
-            thread.join();
-        }
-
-
-        assertEquals(threads, counterService.getCount());
+        assertEquals(threadCount, counterService.getCount());
     }
 }
