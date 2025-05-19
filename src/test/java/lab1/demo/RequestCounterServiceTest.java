@@ -10,7 +10,7 @@ class RequestCounterServiceTest {
     private RequestCounterService counterService;
 
     @BeforeEach
-    void setUp() {
+    void initialize() {
         counterService = new RequestCounterService();
     }
 
