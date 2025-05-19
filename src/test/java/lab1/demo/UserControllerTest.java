@@ -31,25 +31,32 @@ public class UserControllerTest {
     }
 
     @Test
-    void bulkCreateUsers_whenValidRequest_thenReturnsCreatedUsers() {
-        BulkUserRequest req1 = new BulkUserRequest("test1", 8, "low");
-        BulkUserRequest req2 = new BulkUserRequest("test2", 10, "medium");
+    void shouldReturnCreatedUsersForValidBulkRequest() {
+        BulkUserRequest mockRequest1 = mock(BulkUserRequest.class);
+        when(mockRequest1.getUsername()).thenReturn("test1");
+        when(mockRequest1.getSize()).thenReturn(8);
+        when(mockRequest1.getLevel()).thenReturn("low");
 
-        User u1 = new User();
-        u1.setId(1L);
-        u1.setUsername("test1");
+        BulkUserRequest mockRequest2 = mock(BulkUserRequest.class);
+        when(mockRequest2.getUsername()).thenReturn("test2");
+        when(mockRequest2.getSize()).thenReturn(10);
+        when(mockRequest2.getLevel()).thenReturn("medium");
 
-        User u2 = new User();
-        u2.setId(2L);
-        u2.setUsername("test2");
+        User user1 = mock(User.class);
+        when(user1.getId()).thenReturn(1L);
+        when(user1.getUsername()).thenReturn("test1");
 
-        when(userService.bulkCreateUsersWithPasswords(List.of(req1, req2)))
-                .thenReturn(List.of(u1, u2));
+        User user2 = mock(User.class);
+        when(user2.getId()).thenReturn(2L);
+        when(user2.getUsername()).thenReturn("test2");
 
-        ResponseEntity<List<User>> response = userController.bulkCreate(List.of(req1, req2));
+        when(userService.bulkCreateUsersWithPasswords(List.of(mockRequest1, mockRequest2)))
+                .thenReturn(List.of(user1, user2));
+
+        ResponseEntity<List<User>> response = userController.bulkCreate(List.of(mockRequest1, mockRequest2));
 
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());
-        verify(userService, times(1)).bulkCreateUsersWithPasswords(anyList());
+        verify(userService, times(1)).bulkCreateUsersWithPasswords(List.of(mockRequest1, mockRequest2));
     }
 }

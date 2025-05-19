@@ -40,7 +40,7 @@ class PasswordServiceTest {
     private PasswordService passwordService;
 
     @Test
-    void updatePassword_whenValidInput_thenUpdatesPassword() {
+    void shouldUpdatePasswordWhenInputIsValid() {
         Long userId = 1L;
         Long passwordId = 2L;
 
@@ -57,22 +57,22 @@ class PasswordServiceTest {
         Password result = passwordService.updatePassword(userId, passwordId, 12, 2);
 
         assertNotNull(result);
-        verify(passwordRepository).save(mockPassword);
-        verify(cacheService).put(passwordId, anyString());
-        verify(requestCounterService).increment();
+        verify(passwordRepository, times(1)).save(mockPassword);
+        verify(cacheService, times(1)).put(passwordId, anyString());
+        verify(requestCounterService, times(1)).increment();
     }
 
     @Test
-    void updatePassword_whenPasswordNotFound_thenThrowsException() {
+    void shouldThrowExceptionWhenPasswordNotFound() {
         when(passwordRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class,
                 () -> passwordService.updatePassword(1L, 1L, 10, 1));
-        verify(requestCounterService).increment();
+        verify(requestCounterService, times(1)).increment();
     }
 
     @Test
-    void deletePassword_whenValidInput_thenDeletesPassword() {
+    void shouldDeletePasswordWhenInputIsValid() {
         Long userId = 1L;
         Long passwordId = 2L;
 
@@ -87,38 +87,38 @@ class PasswordServiceTest {
 
         passwordService.deletePassword(userId, passwordId);
 
-        verify(passwordRepository).delete(mockPassword);
-        verify(cacheService).remove(passwordId);
+        verify(passwordRepository, times(1)).delete(mockPassword);
+        verify(cacheService, times(1)).remove(passwordId);
         verify(requestCounterService, times(2)).increment();
     }
 
     @Test
-    void generatePassword_whenLevel1_thenReturnsLowercase() {
+    void shouldGenerateLowercasePasswordForLevel1() {
         String result = passwordService.generatePassword(10, 1);
 
         assertNotNull(result);
         assertEquals(10, result.length());
-        verify(requestCounterService).increment();
+        verify(requestCounterService, times(1)).increment();
     }
 
     @Test
-    void generatePassword_whenInvalidLevel_thenUsesDefaultChars() {
+    void shouldUseDefaultCharsForInvalidComplexityLevel() {
         String result = passwordService.generatePassword(8, 999);
 
         assertNotNull(result);
         assertEquals(8, result.length());
-        verify(requestCounterService).increment();
+        verify(requestCounterService, times(1)).increment();
     }
 
     @Test
-    void generatePassword_whenSizeZero_thenThrowsException() {
+    void shouldThrowExceptionWhenPasswordSizeIsZero() {
         assertThrows(IllegalArgumentException.class,
                 () -> passwordService.generatePassword(0, 1));
-        verify(requestCounterService).increment();
+        verify(requestCounterService, times(1)).increment();
     }
 
     @Test
-    void getComplexityLabel_whenValidLevel_thenReturnsCorrectLabel() {
+    void shouldReturnCorrectComplexityLabelForValidLevel() {
         assertEquals("low", passwordService.getComplexityLabel(1));
         assertEquals("medium", passwordService.getComplexityLabel(2));
         assertEquals("high", passwordService.getComplexityLabel(3));
@@ -126,11 +126,11 @@ class PasswordServiceTest {
     }
 
     @Test
-    void createPasswordForUser_whenValidRequest_thenCreatesPassword() {
-        UserRequest request = new UserRequest();
-        request.setUsername("test");
-        request.setLength(8);
-        request.setComplexity(1);
+    void shouldCreatePasswordForValidUserRequest() {
+        UserRequest mockRequest = mock(UserRequest.class);
+        when(mockRequest.getUsername()).thenReturn("test");
+        when(mockRequest.getLength()).thenReturn(8);
+        when(mockRequest.getComplexity()).thenReturn(1);
 
         User mockUser = mock(User.class);
         when(mockUser.getId()).thenReturn(1L);
@@ -140,10 +140,10 @@ class PasswordServiceTest {
         when(userService.addPasswordToUser(anyLong(), anyString(), anyInt(), anyString()))
                 .thenReturn(mockUser);
 
-        Password result = passwordService.createPasswordForUser(request);
+        Password result = passwordService.createPasswordForUser(mockRequest);
 
         assertNotNull(result);
-        verify(cacheService).put(anyLong(), anyString());
-        verify(requestCounterService).increment();
+        verify(cacheService, times(1)).put(anyLong(), anyString());
+        verify(requestCounterService, times(1)).increment();
     }
 }
