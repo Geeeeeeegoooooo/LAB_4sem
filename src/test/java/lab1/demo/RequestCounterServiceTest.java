@@ -20,7 +20,7 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void testIncrementAndGet_SingleThread() {
+    void shouldIncrementAndGetCountWhenSingleThread() {
         counterService.increment();
         assertEquals(1, counterService.getCount());
 
@@ -31,7 +31,7 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void testIncrementAndGet_MultiThread() throws InterruptedException {
+    void shouldIncrementAndGetCountWhenMultipleThreads() throws InterruptedException {
         int threadCount = 100;
         int incrementsPerThread = 100;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -53,7 +53,7 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void getCount_whenInitialState_thenReturnsZero() {
+    void getCount_shouldReturnZero_whenInitialState() {
         assertEquals(0, counterService.getCount());
     }
 }
