@@ -53,7 +53,7 @@ class RequestCounterServiceTest {
     }
 
     @Test
-    void getCount_shouldReturnZero_whenInitialState() {
+    void shouldReturnZeroWhenInitialState() {
         assertEquals(0, counterService.getCount());
     }
 }
